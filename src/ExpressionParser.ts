@@ -253,21 +253,6 @@ export class ExpressionParser {
 
   private parseTerm(state: ParserState): number {
     let value = this.parseUnaryFactor(state) as any;
-    while (true) {
-      const token = state.currentToken;
-      if (token === '*' || token === '/') {
-        const operator = token;
-        state.nextToken();
-        const factor = this.parseUnaryFactor(state);
-        if (operator === '*') {
-          value *= factor as number;
-        } else {
-          value /= factor as number;
-        }
-      } else {
-        break;
-      }
-    }
 
     return value;
   }
