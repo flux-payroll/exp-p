@@ -1,6 +1,6 @@
 {
   "name": "@adifkz/exp-p",
-  "version": "0.0.0-development",
+  "version": "0.1.0-flux",
   "description": "expression parser",
   "main": "index.js",
   "repository": {

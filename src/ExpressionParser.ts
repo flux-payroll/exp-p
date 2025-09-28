@@ -105,6 +105,8 @@ export class ExpressionParser {
 
       if (state.currentToken === ',') {
         state.nextToken();
+      } else if (state.currentToken !== ']') {
+        throw new Error('Invalid expression');
       }
     }
 
@@ -245,11 +247,12 @@ export class ExpressionParser {
     } else if (this.functions.hasOwnProperty(token)) {
       value = this.parseFunction(state);
     } else if (this.operators.hasOwnProperty(token)) {
-      const operator = this.operators[token];
-      state.nextToken();
+      throw new Error('Invalid expression');
+      // const operator = this.operators[token];
+      // state.nextToken();
 
-      const factor = this.parseFactor(state);
-      value = operator(0, factor);
+      // const factor = this.parseFactor(state);
+      // value = operator(0, factor);
     } else {
       // } else if (state.variables.hasOwnProperty(token)) {
       value = state.variables[token];
