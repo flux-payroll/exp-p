@@ -1,4 +1,4 @@
-import { createParser, FunctionMap } from '../'
+import { createParser, FunctionMap, UnaryOperatorMap } from '../'
 
 describe('example', () => {
 
@@ -6,9 +6,7 @@ describe('example', () => {
     const parser = createParser({
     })
     expect(parser.evaluate('(2 + 3) * 4 - 4')).toBe(16)
-    // TODO(meshde): the flux implementation does not handle unary negative
-    // operator
-    // expect(parser.evaluate('-4 + 5')).toBe(1)
+    expect(parser.evaluate('-4 + 5')).toBe(1)
     expect(parser.evaluate('4 <= (5 + 2)')).toBe(true)
     expect(parser.evaluate('4 > 5')).toBe(false)
     expect(parser.evaluate('5 ^ 2 + 2')).toBe(27)
@@ -170,7 +168,7 @@ describe('example', () => {
     // Invalid operator combinations
     expect(() => parser.evaluate('3 +* 5')).toThrow('Invalid expression')
     expect(() => parser.evaluate('2 */ 4')).toThrow('Invalid expression')
-    expect(() => parser.evaluate('1 +- 3')).toThrow('Invalid expression')
+    expect(parser.evaluate('1 +- 3')).toBe(-2) // This is now valid: 1 + (-3) = -2
     expect(() => parser.evaluate('5 ^* 2')).toThrow('Invalid expression')
     expect(() => parser.evaluate('4 %/ 2')).toThrow('Invalid expression')
 
@@ -195,7 +193,7 @@ describe('example', () => {
 
     // Multiple consecutive operators
     expect(() => parser.evaluate('3 ++ 5')).toThrow('Invalid expression')
-    expect(() => parser.evaluate('4 -- 2')).toThrow('Invalid expression')
+    expect(parser.evaluate('4 -- 2')).toBe(6) // This is now valid: 4 - (-2) = 6
     expect(() => parser.evaluate('2 ** 3')).toThrow('Invalid expression')
     expect(() => parser.evaluate('5 /// 2')).toThrow('Invalid expression')
 
@@ -224,5 +222,64 @@ describe('example', () => {
     expect(() => parser.evaluate('name: "test" }')).toThrow('Invalid expression')
     expect(() => parser.evaluate('{ name "test" }')).toThrow('Invalid object literal')
     expect(() => parser.evaluate('{ name: }')).toThrow('Invalid object literal')
+  })
+  it('unary operators', () => {
+    const parser = createParser();
+
+    // Logical NOT operator
+    expect(parser.evaluate('!true')).toBe(false)
+    expect(parser.evaluate('!false')).toBe(true)
+    expect(parser.evaluate('!!true')).toBe(true)
+    expect(parser.evaluate('!!false')).toBe(false)
+    expect(parser.evaluate('!!!true')).toBe(false)
+
+    // Unary negation operator
+    expect(parser.evaluate('-5')).toBe(-5)
+    expect(parser.evaluate('-(-5)')).toBe(5)
+    expect(parser.evaluate('--5')).toBe(5)
+    expect(parser.evaluate('---5')).toBe(-5)
+    expect(parser.evaluate('-0')).toBe(-0)
+    expect(parser.evaluate('-x', { x: 10 })).toBe(-10)
+    expect(parser.evaluate('-(2 + 3)')).toBe(-5)
+
+    // Combined unary operators
+    expect(parser.evaluate('!-1')).toBe(false) // !(−1) → !true → false
+    expect(parser.evaluate('-!true')).toBe(-0) // −(!true) → −false → −0
+    expect(parser.evaluate('!-0')).toBe(true)  // !(−0) → !false → true
+
+    // Unary operators with expressions
+    expect(parser.evaluate('-(5 + 3) * 2')).toBe(-16) // −(5+3) * 2 → −8 * 2 → −16
+    expect(parser.evaluate('!(5 > 3) and true')).toBe(false) // !(5>3) and true → !true and true → false and true → false
+    expect(parser.evaluate('!(5 > 3) or true')).toBe(true)   // !(5>3) or true → !true or true → false or true → true
+
+    // Unary operators with variables
+    expect(parser.evaluate('!isTrue', { isTrue: true })).toBe(false)
+    expect(parser.evaluate('!isTrue', { isTrue: false })).toBe(true)
+    expect(parser.evaluate('-num', { num: 42 })).toBe(-42)
+
+    // Precedence tests
+    expect(parser.evaluate('-5 + 3')).toBe(-2)  // −5 + 3 → −2
+    expect(parser.evaluate('-(5 + 3)')).toBe(-8) // −(5+3) → −8
+    expect(parser.evaluate('!false and true')).toBe(true) // (!false) and true → true and true → true
+    expect(parser.evaluate('!(false and true)')).toBe(true) // !(false and true) → !(false) → true
+  })
+  it('unary operator edge cases', () => {
+    const parser = createParser();
+
+    // Unary operators with different data types
+    expect(parser.evaluate('!"hello"')).toBe(false) // !"hello" → !true → false
+    expect(parser.evaluate('!""')).toBe(true)       // !"" → !false → true
+    expect(parser.evaluate('!0')).toBe(true)        // !0 → !false → true
+    expect(parser.evaluate('!1')).toBe(false)       // !1 → !true → false
+    expect(parser.evaluate('!null')).toBe(true)     // !null → !false → true
+
+    // Unary negation with different data types
+    expect(parser.evaluate('-true')).toBe(-1)       // −true → −1
+    expect(parser.evaluate('-false')).toBe(-0)      // −false → −0
+    expect(parser.evaluate('-"5"')).toBe(-5)        // −"5" → −5
+
+    // Arrays and objects (should work with truthy/falsy values)
+    expect(parser.evaluate('![1,2,3]')).toBe(false) // ![1,2,3] → !true → false
+    expect(parser.evaluate('![]')).toBe(false)      // ![] → !true → false (empty array is truthy in JS)
   })
 });

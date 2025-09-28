@@ -1,4 +1,4 @@
-import ExpressionParser, { ExpressionParserConstructor, FunctionMap, OperatorMap, PrecedenceMap } from "./ExpressionParser"
+import ExpressionParser, { ExpressionParserConstructor, FunctionMap, OperatorMap, UnaryOperatorMap, PrecedenceMap } from "./ExpressionParser"
 import moment from 'moment'
 
 type Unit = "year" | "years" | "y" | "month" | "months" | "M" | "week" | "weeks" | "w" | "day" | "days" | "d" | "hour" | "hours" | "h" | "minute" | "minutes" | "m" | "second" | "seconds" | "s" | "millisecond" | "milliseconds" | "ms"
@@ -26,6 +26,11 @@ export function createParser(props: ExpressionParserConstructor = {}) {
     '==': (a, b) => a === b,
     '!=': (a, b) => a !== b,
     '^': (a, b) => Math.pow(a, b)
+  }
+
+  const unaryOperators: UnaryOperatorMap = {
+    '!': (value) => !value,
+    '-': (value) => -value
   }
 
   const defaultPrecedence: PrecedenceMap = {
@@ -259,6 +264,7 @@ export function createParser(props: ExpressionParserConstructor = {}) {
 
   parser.setFunctions(functions)
   parser.setOperators(operators)
+  parser.setUnaryOperators(unaryOperators)
   parser.setOperatorPrecedence(defaultPrecedence)
   return parser;
 }

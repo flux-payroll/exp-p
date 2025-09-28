@@ -10,11 +10,13 @@ type ValueType = number | string | boolean | any[] | object;
 export type VariableMap = { [key: string]: ValueType };
 export type FunctionMap = { [key: string]: (state: ParserState, ...args: any[]) => any };
 export type OperatorMap = { [key: string]: (a: any, b: any) => any };
+export type UnaryOperatorMap = { [key: string]: (value: any) => any };
 export type PrecedenceMap = { [operator: string]: number };
 export type ExpressionParserConstructor = {
   variables?: VariableMap,
   regex?: RegExp,
   operatorPrecedence?: PrecedenceMap,
+  unaryOperators?: UnaryOperatorMap,
 }
 
 
@@ -28,13 +30,15 @@ export class ExpressionParser {
   variables: VariableMap = {};
   functions: FunctionMap = {};
   operators: OperatorMap = {};
+  unaryOperators: UnaryOperatorMap = {};
   operatorPrecedence: PrecedenceMap = {};
   regex: RegExp;
 
   constructor({
     variables,
     regex,
-    operatorPrecedence
+    operatorPrecedence,
+    unaryOperators
   }: ExpressionParserConstructor = {}) {
     let regexString = comparisonOperatorRegex.source +
       '|' +
@@ -59,6 +63,10 @@ export class ExpressionParser {
     this.operatorPrecedence = {
       ...this.operatorPrecedence,
       ...(operatorPrecedence || {})
+    }
+    this.unaryOperators = {
+      ...this.unaryOperators,
+      ...(unaryOperators || {})
     }
   }
 
@@ -121,10 +129,11 @@ export class ExpressionParser {
   private parseUnaryFactor(state: ParserState): any {
     const token = state.currentToken;
 
-    if (token === '!') {
+    if (token && this.unaryOperators.hasOwnProperty(token)) {
+      const unaryOperator = this.unaryOperators[token];
       state.nextToken();
       const factor = this.parseUnaryFactor(state);
-      return !factor;
+      return unaryOperator(factor);
     }
 
     return this.parseFactor(state);
@@ -327,6 +336,13 @@ export class ExpressionParser {
     this.operators = {
       ...this.operators,
       ...operators
+    };
+  }
+
+  public setUnaryOperators(unaryOperators: UnaryOperatorMap): void {
+    this.unaryOperators = {
+      ...this.unaryOperators,
+      ...unaryOperators
     };
   }
 
