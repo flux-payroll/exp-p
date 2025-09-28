@@ -10,9 +10,11 @@ type ValueType = number | string | boolean | any[] | object;
 export type VariableMap = { [key: string]: ValueType };
 export type FunctionMap = { [key: string]: (state: ParserState, ...args: any[]) => any };
 export type OperatorMap = { [key: string]: (a: any, b: any) => any };
+export type PrecedenceMap = { [operator: string]: number };
 export type ExpressionParserConstructor = {
   variables?: VariableMap,
   regex?: RegExp,
+  operatorPrecedence?: PrecedenceMap,
 }
 
 
@@ -26,11 +28,13 @@ export class ExpressionParser {
   variables: VariableMap = {};
   functions: FunctionMap = {};
   operators: OperatorMap = {};
+  operatorPrecedence: PrecedenceMap = {};
   regex: RegExp;
 
   constructor({
     variables,
-    regex
+    regex,
+    operatorPrecedence
   }: ExpressionParserConstructor = {}) {
     let regexString = comparisonOperatorRegex.source +
       '|' +
@@ -51,6 +55,10 @@ export class ExpressionParser {
     this.variables = {
       ...this.variables,
       ...(variables || {})
+    }
+    this.operatorPrecedence = {
+      ...this.operatorPrecedence,
+      ...(operatorPrecedence || {})
     }
   }
 
@@ -257,22 +265,24 @@ export class ExpressionParser {
     return value;
   }
 
-  private parseExpression(state: ParserState): any {
-    let value = this.parseTerm(state);
+  private parseExpression(state: ParserState, minPrecedence: number = 0): any {
+    let left = this.parseTerm(state);
 
-    while (true) {
-      const token = state.currentToken;
-      if (token in this.operators) {
-        const operator = token;
-        state.nextToken();
-        const term = this.parseTerm(state);
-        value = this.operators[operator](value, term);
-      } else {
-        break;
-      }
+    while (state.currentToken &&
+           state.currentToken in this.operators &&
+           this.getPrecedence(state.currentToken) >= minPrecedence) {
+
+      const operator = state.currentToken;
+      const precedence = this.getPrecedence(operator);
+      state.nextToken();
+
+      // Recursive call with higher precedence for right-associative
+      const right = this.parseExpression(state, precedence + 1);
+
+      left = this.operators[operator](left, right);
     }
 
-    return value;
+    return left;
   }
 
   public evaluate(
@@ -315,6 +325,17 @@ export class ExpressionParser {
       ...this.operators,
       ...operators
     };
+  }
+
+  public setOperatorPrecedence(precedence: PrecedenceMap): void {
+    this.operatorPrecedence = {
+      ...this.operatorPrecedence,
+      ...precedence
+    };
+  }
+
+  private getPrecedence(operator: string): number {
+    return this.operatorPrecedence[operator] || 0;
   }
 }
 

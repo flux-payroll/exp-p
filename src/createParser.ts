@@ -1,4 +1,4 @@
-import ExpressionParser, { ExpressionParserConstructor, FunctionMap, OperatorMap } from "./ExpressionParser"
+import ExpressionParser, { ExpressionParserConstructor, FunctionMap, OperatorMap, PrecedenceMap } from "./ExpressionParser"
 import moment from 'moment'
 
 type Unit = "year" | "years" | "y" | "month" | "months" | "M" | "week" | "weeks" | "w" | "day" | "days" | "d" | "hour" | "hours" | "h" | "minute" | "minutes" | "m" | "second" | "seconds" | "s" | "millisecond" | "milliseconds" | "ms"
@@ -26,6 +26,23 @@ export function createParser(props: ExpressionParserConstructor = {}) {
     '==': (a, b) => a === b,
     '!=': (a, b) => a !== b,
     '^': (a, b) => Math.pow(a, b)
+  }
+
+  const defaultPrecedence: PrecedenceMap = {
+    '/': 4,    // Division (highest precedence)
+    '*': 3,    // Multiplication
+    '%': 3,    // Modulo (same as multiplication)
+    '^': 5,    // Exponentiation (higher than multiplication)
+    '+': 2,    // Addition
+    '-': 2,    // Subtraction
+    '>': 1,    // Comparison operators
+    '>=': 1,
+    '<': 1,
+    '<=': 1,
+    '==': 1,
+    '!=': 1,
+    'and': 0,  // Logical operators (lowest precedence)
+    'or': 0
   }
   const functions: FunctionMap = {
     // DATATYPE ==================================================================================
@@ -242,6 +259,7 @@ export function createParser(props: ExpressionParserConstructor = {}) {
 
   parser.setFunctions(functions)
   parser.setOperators(operators)
+  parser.setOperatorPrecedence(defaultPrecedence)
   return parser;
 }
 
