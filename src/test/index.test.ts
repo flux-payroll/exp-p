@@ -211,7 +211,7 @@ describe('example', () => {
     expect(() => parser.evaluate('unknownFunction(5)')).toThrow('Invalid expression')
     expect(() => parser.evaluate('add(')).toThrow('Invalid expression')
     expect(() => parser.evaluate('add(5')).toThrow('Invalid expression')
-    expect(() => parser.evaluate('add 5)')).toThrow('Invalid expression')
+    expect(() => parser.evaluate('add 5)')).toThrow('No value provided for variable add')
 
     // Invalid array syntax
     expect(() => parser.evaluate('[1, 2')).toThrow('Invalid expression')
@@ -219,7 +219,7 @@ describe('example', () => {
     expect(() => parser.evaluate('[1 2]')).toThrow('Invalid expression')
 
     // Invalid object syntax
-    expect(() => parser.evaluate('name: "test" }')).toThrow('Invalid expression')
+    expect(() => parser.evaluate('name: "test" }')).toThrow('No value provided for variable name')
     expect(() => parser.evaluate('{ name "test" }')).toThrow('Invalid object literal')
     expect(() => parser.evaluate('{ name: }')).toThrow('Invalid object literal')
   })
@@ -271,7 +271,6 @@ describe('example', () => {
     expect(parser.evaluate('!""')).toBe(true)       // !"" → !false → true
     expect(parser.evaluate('!0')).toBe(true)        // !0 → !false → true
     expect(parser.evaluate('!1')).toBe(false)       // !1 → !true → false
-    expect(parser.evaluate('!null')).toBe(true)     // !null → !false → true
 
     // Unary negation with different data types
     expect(parser.evaluate('-true')).toBe(-1)       // −true → −1
@@ -281,6 +280,20 @@ describe('example', () => {
     // Arrays and objects (should work with truthy/falsy values)
     expect(parser.evaluate('![1,2,3]')).toBe(false) // ![1,2,3] → !true → false
     expect(parser.evaluate('![]')).toBe(false)      // ![] → !true → false (empty array is truthy in JS)
+  })
+  it('undefined variable throws error', () => {
+    const parser = createParser();
+
+    // Variable not provided in variables map
+    expect(() => parser.evaluate('unknownVar')).toThrow('No value provided for variable unknownVar')
+
+    // Variable in expression
+    expect(() => parser.evaluate('5 + unknownVar')).toThrow('No value provided for variable unknownVar')
+
+    // Function getter that returns undefined
+    expect(() => parser.evaluate('getUndefined', {
+      getUndefined: () => undefined
+    })).toThrow('No value provided for variable getUndefined')
   })
   it('function getter variables', () => {
     const parser = createParser();

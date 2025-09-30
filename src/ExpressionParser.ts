@@ -271,6 +271,12 @@ export class ExpressionParser {
       }
 
       state.nextToken();
+
+      // only throw below error if token satisfies identifier regex
+      if (value === undefined && token.match(identifierRegex) && state.currentToken !== '(') {
+        throw new Error('No value provided for variable ' + token);
+      }
+
     }
 
     return value;
