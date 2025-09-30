@@ -265,6 +265,11 @@ export class ExpressionParser {
     } else {
       // } else if (state.variables.hasOwnProperty(token)) {
       value = state.variables[token];
+
+      if (typeof value === 'function') {
+        value = value(state);
+      }
+
       state.nextToken();
     }
 

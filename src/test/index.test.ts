@@ -282,4 +282,83 @@ describe('example', () => {
     expect(parser.evaluate('![1,2,3]')).toBe(false) // ![1,2,3] → !true → false
     expect(parser.evaluate('![]')).toBe(false)      // ![] → !true → false (empty array is truthy in JS)
   })
+  it('function getter variables', () => {
+    const parser = createParser();
+
+    // Basic function getter that returns a constant
+    expect(parser.evaluate('dynamicValue', {
+      dynamicValue: () => 42
+    })).toBe(42)
+
+    // Function getter that returns a string
+    expect(parser.evaluate('getMessage', {
+      getMessage: () => 'Hello, World!'
+    })).toBe('Hello, World!')
+
+    // Function getter used in arithmetic
+    expect(parser.evaluate('getValue + 10', {
+      getValue: () => 5
+    })).toBe(15)
+
+    // Function getter used with operators
+    expect(parser.evaluate('getPrice * 2', {
+      getPrice: () => 100
+    })).toBe(200)
+
+    // Multiple function getters in one expression
+    expect(parser.evaluate('getX + getY', {
+      getX: () => 10,
+      getY: () => 20
+    })).toBe(30)
+
+    // Function getter that returns boolean
+    expect(parser.evaluate('isActive and true', {
+      isActive: () => true
+    })).toBe(true)
+
+    expect(parser.evaluate('isDisabled or false', {
+      isDisabled: () => false
+    })).toBe(false)
+
+    // Function getter that returns an array
+    expect(parser.evaluate('getArray', {
+      getArray: () => [1, 2, 3, 4]
+    })).toEqual([1, 2, 3, 4])
+
+    // Function getter that returns an object
+    expect(parser.evaluate('getUser', {
+      getUser: () => ({ name: 'John', age: 30 })
+    })).toEqual({ name: 'John', age: 30 })
+
+    // Function getter used in comparisons
+    expect(parser.evaluate('getScore > 50', {
+      getScore: () => 75
+    })).toBe(true)
+
+    expect(parser.evaluate('getCount == 0', {
+      getCount: () => 0
+    })).toBe(true)
+
+    // Function getter with unary operators
+    expect(parser.evaluate('!getFlag', {
+      getFlag: () => false
+    })).toBe(true)
+
+    expect(parser.evaluate('-getNumber', {
+      getNumber: () => 42
+    })).toBe(-42)
+
+    // Function getter in complex expression
+    expect(parser.evaluate('(getA + getB) * 2 - getC', {
+      getA: () => 5,
+      getB: () => 10,
+      getC: () => 5
+    })).toBe(25)
+
+    // Function getter mixed with regular variables
+    expect(parser.evaluate('staticVar + dynamicFunc', {
+      staticVar: 100,
+      dynamicFunc: () => 50
+    })).toBe(150)
+  })
 });
